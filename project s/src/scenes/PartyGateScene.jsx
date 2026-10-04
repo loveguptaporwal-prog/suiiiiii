@@ -214,32 +214,33 @@ export function PartyGateScene({ name = birthdayData.name }) {
       />
 
       {/* ---------------- POSTPROCESSING PIPELINE ---------------- */}
-      {/* High-Performance Postprocessing — multisampling={0} and halfRes N8AO eliminates SSAO bottlenecks */}
+      {/* Full pipeline on desktop (SSAO N8AO + Bloom + ChromaticAberration + Vignette) */}
+      {/* Safe lightweight pipeline on mobile: skips N8AO depth-sampling to prevent mobile GPU WebGL context loss */}
       <EffectComposer multisampling={0}>
-        {/* N8AO — high-performance, clean ambient occlusion for soft grounding under plates and table edges */}
-        <N8AO
-          halfRes
-          quality="medium"
-          aoRadius={0.35}
-          intensity={1.1}
-          color="#1A0D14"
-        />
+        {typeof navigator !== 'undefined' && !(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth <= 1024)) && (
+          <N8AO
+            halfRes
+            quality="medium"
+            aoRadius={0.35}
+            intensity={1.1}
+            color="#1A0D14"
+          />
+        )}
 
-        {/* Bloom — calibrated to only catch genuine emissives (candle flames & fairy lights) without washing out walls */}
         <Bloom
           luminanceThreshold={1.15}
           luminanceSmoothing={0.15}
           intensity={0.22}
-          mipmapBlur
+          mipmapBlur={typeof navigator !== 'undefined' && !(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth <= 1024))}
         />
 
-        {/* ChromaticAberration — microscopic lens character */}
-        <ChromaticAberration
-          offset={[0.0003, 0.0003]}
-          radialModulation={false}
-        />
+        {typeof navigator !== 'undefined' && !(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth <= 1024)) && (
+          <ChromaticAberration
+            offset={[0.0003, 0.0003]}
+            radialModulation={false}
+          />
+        )}
 
-        {/* Vignette — soft framing that keeps the corners bright and readable */}
         <Vignette
           offset={0.45}
           darkness={0.35}

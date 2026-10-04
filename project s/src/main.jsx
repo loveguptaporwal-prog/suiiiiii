@@ -48,8 +48,15 @@ root.render(
           camera={{ position: [0, 1.22, 5.25], fov: 42 }}
           gl={{
             antialias: true,
+            powerPreference: 'high-performance',
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 0.92,
+          }}
+          onCreated={({ gl }) => {
+            gl.domElement.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              console.warn('WebGL context lost — recovering gracefully');
+            }, false);
           }}
         >
           <PartyGateScene name={birthdayData.name} />
