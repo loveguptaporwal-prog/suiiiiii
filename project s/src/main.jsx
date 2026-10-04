@@ -6,6 +6,7 @@ import { PartyGateScene } from './scenes/PartyGateScene.jsx';
 import { birthdayData } from './data/birthdayData.js';
 import { RotatePhoneOverlay } from './components/RotatePhoneOverlay.jsx';
 import { ContextualPromptHUD } from './components/ContextualPromptHUD.jsx';
+import { MobileControlsOverlay } from './components/MobileControlsOverlay.jsx';
 
 import './styles/tokens.css';
 import './styles/reset.css';
@@ -56,6 +57,9 @@ root.render(
 
         {/* In-world physical context prompts for doors, cake cutting, eating, turntable, gifts */}
         <ContextualPromptHUD />
+
+        {/* Responsive Mobile On-Screen Touch Controls (Move & E-Action) */}
+        <MobileControlsOverlay />
 
         {/* Beautiful mobile orientation guidance prompting landscape rotation */}
         <RotatePhoneOverlay />

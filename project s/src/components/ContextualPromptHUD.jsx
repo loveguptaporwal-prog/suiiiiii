@@ -390,6 +390,25 @@ export function ContextualPromptHUD() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  // Listen to mobile action trigger from touch E button
+  useEffect(() => {
+    const unsubMobileAction = worldEventBus.on('MOBILE_TRIGGER_ACTION', () => {
+      if (activePrompt && activePrompt.onTrigger) {
+        activePrompt.onTrigger();
+      }
+    });
+    return () => unsubMobileAction();
+  }, [activePrompt]);
+
+  // Broadcast prompt state so mobile E button can highlight and display label
+  useEffect(() => {
+    worldEventBus.emit('ACTIVE_PROMPT_STATE', activePrompt ? {
+      keyLabel: activePrompt.keyLabel,
+      actionText: activePrompt.actionText,
+      canTrigger: Boolean(activePrompt.onTrigger),
+    } : null);
+  }, [activePrompt]);
+
   const hasInteractiveTarget = Boolean(activePrompt && activePrompt.onTrigger);
 
   return (
@@ -438,6 +457,7 @@ export function ContextualPromptHUD() {
       {/* 2. CONTEXTUAL ACTION PILL -- tiny, game-like, never obtrusive */}
       {activePrompt && (
         <div
+          data-touch-control="true"
           onClick={activePrompt.onTrigger || undefined}
           style={{
             position: 'fixed',

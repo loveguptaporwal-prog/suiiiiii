@@ -49,15 +49,28 @@ export function HumanCameraController({
   const targetYawRef = useRef(0);
   const targetPitchRef = useRef(-0.06);
 
-  // Drag interaction tracking with momentum
+  // Drag interaction tracking with multi-touch isolation and tap deadzone
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
+  const dragPointerIdRef = useRef(null);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
+  const hasExceededDragThresholdRef = useRef(false);
 
   // Passive parallax offset (subtle natural sway)
   const parallaxRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
 
   // Keyboard navigation state
   const keysRef = useRef({
+    forward: false,
+    backward: false,
+    strafeLeft: false,
+    strafeRight: false,
+    turnLeft: false,
+    turnRight: false,
+  });
+
+  // Mobile touch navigation state
+  const mobileInputRef = useRef({
     forward: false,
     backward: false,
     strafeLeft: false,
@@ -75,16 +88,19 @@ export function HumanCameraController({
   const lastEmitPosRef = useRef(new THREE.Vector3(999, 999, 999));
 
   useEffect(() => {
-    let startX = 0;
-    let startY = 0;
-    let startTime = 0;
-
     const handlePointerDown = (e) => {
-      isDraggingRef.current = true;
+      // Do not initiate camera look dragging if touching an interactive UI element or mobile touch control
+      if (e.target && e.target.closest && e.target.closest('button, [data-touch-control], .interactive-ui, .prompt-hud, input, textarea, a')) {
+        return;
+      }
+      // If we already have an active look pointer, ignore additional fingers (multi-touch safety)
+      if (dragPointerIdRef.current !== null) return;
+
+      dragPointerIdRef.current = e.pointerId;
+      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
       lastPointerRef.current = { x: e.clientX, y: e.clientY };
-      startX = e.clientX;
-      startY = e.clientY;
-      startTime = performance.now();
+      hasExceededDragThresholdRef.current = false;
+      isDraggingRef.current = false;
     };
 
     const handlePointerMove = (e) => {
@@ -94,7 +110,22 @@ export function HumanCameraController({
       parallaxRef.current.targetX = px;
       parallaxRef.current.targetY = py;
 
-      if (!isDraggingRef.current) return;
+      // Only track the single pointer assigned to camera look
+      if (dragPointerIdRef.current === null || e.pointerId !== dragPointerIdRef.current) return;
+
+      // Check tap deadzone threshold (7px) before rotating camera
+      // This ensures finger taps to click balloons, gifts, cake, etc. do NOT move camera,
+      // which allows R3F's raycaster to cleanly detect clicks without missing
+      if (!hasExceededDragThresholdRef.current) {
+        const dist = Math.hypot(e.clientX - dragStartPosRef.current.x, e.clientY - dragStartPosRef.current.y);
+        if (dist >= 7) {
+          hasExceededDragThresholdRef.current = true;
+          isDraggingRef.current = true;
+          lastPointerRef.current = { x: e.clientX, y: e.clientY };
+        } else {
+          return;
+        }
+      }
 
       const dx = e.clientX - lastPointerRef.current.x;
       const dy = e.clientY - lastPointerRef.current.y;
@@ -111,9 +142,28 @@ export function HumanCameraController({
       );
     };
 
-    const handlePointerUp = () => {
-      isDraggingRef.current = false;
+    const handlePointerUp = (e) => {
+      if (e.pointerId === dragPointerIdRef.current) {
+        dragPointerIdRef.current = null;
+        isDraggingRef.current = false;
+        hasExceededDragThresholdRef.current = false;
+      }
     };
+
+    const handlePointerCancel = (e) => {
+      if (e.pointerId === dragPointerIdRef.current) {
+        dragPointerIdRef.current = null;
+        isDraggingRef.current = false;
+        hasExceededDragThresholdRef.current = false;
+      }
+    };
+
+    // Mobile move event listener from WorldEventBus
+    const unsubMobileMove = worldEventBus.on('MOBILE_MOVE', (moveData) => {
+      if (moveData) {
+        Object.assign(mobileInputRef.current, moveData);
+      }
+    });
 
     // Wheel navigation (smooth, slow, game-like forward glide)
     const handleWheel = (e) => {
@@ -181,6 +231,7 @@ export function HumanCameraController({
     window.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerCancel);
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -209,10 +260,12 @@ export function HumanCameraController({
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       if (unsubCandles) unsubCandles();
+      if (unsubMobileMove) unsubMobileMove();
     };
   }, [gl]);
 
@@ -220,10 +273,12 @@ export function HumanCameraController({
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
 
-    // 1. Keyboard rotation (Turn Left / Turn Right via Arrow keys or Q/E)
+    // 1. Rotation (Turn Left / Turn Right via Keyboard Arrow keys or Q/E, or Mobile Buttons)
     const turnSpeed = 1.35; // Cinematic, smooth turn speed (rad/s)
-    if (keysRef.current.turnLeft) targetYawRef.current += turnSpeed * dt;
-    if (keysRef.current.turnRight) targetYawRef.current -= turnSpeed * dt;
+    const isTurnL = keysRef.current.turnLeft || mobileInputRef.current.turnLeft;
+    const isTurnR = keysRef.current.turnRight || mobileInputRef.current.turnRight;
+    if (isTurnL) targetYawRef.current += turnSpeed * dt;
+    if (isTurnR) targetYawRef.current -= turnSpeed * dt;
 
     // Silky, consistent exponential damping for camera rotation
     // Clamping the look delta step to 1/60s (0.0167s) prevents sudden angular lurching during frame spikes
@@ -233,15 +288,20 @@ export function HumanCameraController({
     yawRef.current = THREE.MathUtils.lerp(yawRef.current, targetYawRef.current, lookDamping);
     pitchRef.current = THREE.MathUtils.lerp(pitchRef.current, targetPitchRef.current, lookDamping);
 
-    // 2. Keyboard & Input Acceleration (Smooth, realistic walking momentum without sluggishness)
+    // 2. Keyboard & Mobile Input Acceleration (Smooth, realistic walking momentum without sluggishness)
     _moveVector.set(0, 0, 0);
     _forwardVector.set(-Math.sin(yawRef.current), 0, -Math.cos(yawRef.current)).normalize();
     _rightVector.set(Math.cos(yawRef.current), 0, -Math.sin(yawRef.current)).normalize();
 
-    if (keysRef.current.forward) _moveVector.add(_forwardVector);
-    if (keysRef.current.backward) _moveVector.sub(_forwardVector);
-    if (keysRef.current.strafeRight) _moveVector.add(_rightVector);
-    if (keysRef.current.strafeLeft) _moveVector.sub(_rightVector);
+    const isFwd = keysRef.current.forward || mobileInputRef.current.forward;
+    const isBwd = keysRef.current.backward || mobileInputRef.current.backward;
+    const isRight = keysRef.current.strafeRight || mobileInputRef.current.strafeRight;
+    const isLeft = keysRef.current.strafeLeft || mobileInputRef.current.strafeLeft;
+
+    if (isFwd) _moveVector.add(_forwardVector);
+    if (isBwd) _moveVector.sub(_forwardVector);
+    if (isRight) _moveVector.add(_rightVector);
+    if (isLeft) _moveVector.sub(_rightVector);
 
     const isMoving = _moveVector.lengthSq() > 0;
     const walkSpeed = 2.4; // Comfortable, realistic human walking pace (m/s)

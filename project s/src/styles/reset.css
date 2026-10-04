@@ -29,8 +29,12 @@ button {
   font: inherit;
   cursor: pointer;
   outline: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 canvas {
   display: block;
+  touch-action: none;
 }
+
