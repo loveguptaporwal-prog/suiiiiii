@@ -1,0 +1,15 @@
+/* Theme overrides for Project S party aesthetic */
+:root {
+  /* Warm pastel palette */
+  --color-void: #FFE5F0; /* background pastel pink */
+  --color-abyss: #FFD1DC;
+  --color-midnight: #FFC0CB;
+  --color-twilight-haze: #FFB6C1;
+  --color-starlight: #FFF5F8;
+  --color-starlight-dim: rgba(255, 245, 250, 0.45);
+  --color-warm-glow: rgba(255, 220, 235, 0.4);
+  --color-focal-light: #ffe0e8;
+  --color-text-primary: #330033;
+  --color-text-muted: rgba(150, 0, 75, 0.78);
+  --color-text-subtle: rgba(180, 0, 100, 0.35);
+}

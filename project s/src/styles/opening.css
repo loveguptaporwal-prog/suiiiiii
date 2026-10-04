@@ -1,0 +1,326 @@
+/* ==========================================================================
+   Celestial Moon System
+   ========================================================================== */
+.celestial-moon {
+  position: absolute;
+  top: 22%;
+  left: 65%;
+  width: min(240px, 32vw);
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Outer Corona Radiance */
+.moon-corona {
+  position: absolute;
+  inset: -60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, 
+    rgba(215, 235, 255, 0.32) 0%, 
+    rgba(175, 205, 245, 0.16) 30%, 
+    rgba(140, 175, 225, 0.05) 55%, 
+    transparent 75%
+  );
+  filter: blur(24px);
+  will-change: opacity, transform;
+  animation: coronaPulse 14s ease-in-out infinite alternate;
+}
+
+@keyframes coronaPulse {
+  0% { transform: scale(0.96); opacity: 0.85; }
+  100% { transform: scale(1.04); opacity: 1; }
+}
+
+/* Physical Spherical Body */
+.moon-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 96%, transparent 100%);
+  mask-image: radial-gradient(circle at 50% 50%, black 96%, transparent 100%);
+  box-shadow: 
+    inset -6px -6px 20px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 12px rgba(255, 255, 255, 0.4),
+    0 0 60px rgba(215, 235, 255, 0.4);
+  will-change: transform;
+}
+
+.moon-texture {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  filter: brightness(0.97) contrast(1.04);
+  transform: rotate(-10deg) scale(1.12);
+  transform-origin: center center;
+}
+
+
+/* Future Portrait Reveal Hook (Intentionally dormant in Phase 1) */
+.moon-portrait-hook {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  transition: opacity 2s var(--ease-cinematic);
+}
+
+/* Fine Lunar Haze Veil */
+.moon-haze-veil {
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.2), transparent 68%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Atmospheric Drifting Clouds (Seamless Feathered Banks)
+   ========================================================================== */
+.cloud-band {
+  position: absolute;
+  width: 180%;
+  height: 55%;
+  background-image: url('/assets/world/textures/clouds-drift.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 50%, black 25%, rgba(0,0,0,0.6) 50%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 50%, black 25%, rgba(0,0,0,0.6) 50%, transparent 80%);
+}
+
+.band-deep {
+  top: 12%;
+  left: -20%;
+  opacity: 0.32;
+  filter: blur(5px) brightness(0.75);
+  animation: cloudDriftDeep 140s ease-in-out infinite alternate;
+}
+
+.band-mid {
+  top: 20%;
+  left: 10%;
+  opacity: 0.5;
+  filter: blur(2px) brightness(0.9);
+  animation: cloudDriftMid 100s ease-in-out infinite alternate;
+}
+
+@keyframes cloudDriftDeep {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-18%, -4%, 0) scale(1.08); }
+}
+
+@keyframes cloudDriftMid {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-14%, 3%, 0) scale(1.06); }
+}
+
+
+/* ==========================================================================
+   Discovery Interactive Entities (Understated & Restrained)
+   ========================================================================== */
+.discovery-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  pointer-events: auto;
+  outline: none;
+  transition: transform 0.8s var(--ease-gentle);
+}
+
+.entity-pulse-ring {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  border: 1px solid rgba(240, 245, 255, 0.12);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.9s var(--ease-cinematic);
+  pointer-events: none;
+}
+
+.entity-core {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 10%, rgba(225, 240, 255, 0.9) 40%, rgba(200, 225, 255, 0) 75%);
+  box-shadow: 0 0 16px rgba(225, 240, 255, 0.45);
+  transition: all 0.6s var(--ease-cinematic);
+}
+
+/* Understated Focal Variant (Warm / Distant) */
+.discovery-anchor[data-variant="warm"] .entity-core {
+  background: radial-gradient(circle, #fff7e8 15%, var(--color-focal-light) 50%, rgba(251, 227, 181, 0) 80%);
+  box-shadow: 0 0 20px var(--color-warm-glow);
+}
+
+/* Organic Hover/Proximity Response */
+.discovery-anchor:hover .entity-core,
+.discovery-anchor.proximity .entity-core {
+  transform: scale(1.35);
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.85);
+}
+
+.discovery-anchor:hover .entity-pulse-ring,
+.discovery-anchor.proximity .entity-pulse-ring {
+  opacity: 0.6;
+  transform: scale(1.3);
+}
+
+/* ==========================================================================
+   Discovery Inspection Modal & Focus Veil
+   ========================================================================== */
+.discovery-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s var(--ease-cinematic);
+}
+
+.discovery-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.discovery-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 6, 14, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.discovery-card {
+  position: relative;
+  width: min(440px, 86vw);
+  padding: 44px 36px 36px;
+  background: rgba(10, 16, 32, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 40px rgba(180, 210, 255, 0.05);
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.9s var(--ease-cinematic);
+}
+
+.discovery-modal.active .discovery-card {
+  transform: translateY(0) scale(1);
+}
+
+.card-glow-rim {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(230, 245, 255, 0.35), transparent);
+}
+
+.card-content {
+  text-align: center;
+}
+
+.card-content .card-index {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  margin-bottom: 20px;
+}
+
+.card-content .card-title {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 1.65rem;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+  margin-bottom: 16px;
+}
+
+.card-content .card-annotation {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  font-weight: 300;
+}
+
+.discovery-return-btn {
+  margin-top: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.4s ease;
+}
+
+.discovery-return-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.btn-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-starlight);
+  opacity: 0.6;
+}
+
+.btn-text {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Responsive Adaptations (Mobile & Vertical Framing)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .celestial-moon {
+    top: 22%;
+    left: 50%;
+    width: min(220px, 52vw);
+  }
+
+  .world-space {
+    top: -4%;
+    left: -12%;
+    width: 124%;
+    height: 108%;
+  }
+
+  .foreground-canvas {
+    height: 40%;
+  }
+
+  .discovery-card {
+    padding: 34px 24px 28px;
+  }
+  
+  .card-content .card-title {
+    font-size: 1.4rem;
+  }
+}
